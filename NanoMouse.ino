@@ -1,6 +1,7 @@
 #include <Servo.h>
 #include "NanoMouseMotors.h"
 #include "NanoMouseSensors.h"
+#include "NanoMouseMaze.h"
 
 NanoMouseMotors motors;
 
@@ -16,6 +17,8 @@ int thresholdFront;
 int targetSide;
 int thresholdSide;
 
+NanoMouseMaze<4,6> maze;
+
 void setup()
 {
 
@@ -26,18 +29,29 @@ void setup()
 
   sensors.configure();
 
+  maze.mouseRow = 3;
+  maze.mouseColumn = 0;
+  maze.mouseHeading = NORTH;
+
+  maze.targetRow = 2;
+  maze.targetColumn = 4;
+
   Serial.begin(9600);
   while (digitalRead(buttonPin)) {}
 
-  delay(500);
+  delay(200);
 
-  calibrate();
+//  calibrate();
+
+  maze.addVirtualWalls();
+  maze.solve();
+  maze.print();
 
 }
 
 void loop()
 {
-  navigateLabyrinth(state());
+  //navigateLabryrinth(state());
 }
 
 byte state()
@@ -67,7 +81,7 @@ void calibrate()
   motors.turn(RIGHT, 90);
   sensors.initialize();
   targetFront = sensors.front;
-  thresholdSide = (targetSide + sensors.left) / 2;
+  thresholdSide = (targetSide + 2*sensors.left) / 3;
 
   motors.turn(LEFT, 90);
   sensors.initialize();
@@ -76,7 +90,9 @@ void calibrate()
 
 void forwardWhiskers()
 {
-  while (sensors.front < targetFront)
+  unsigned long startingTime = millis();
+  
+  while (sensors.front < targetFront && millis() - startingTime < 1505)
   {
     sensors.sense();
 

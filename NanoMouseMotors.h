@@ -44,7 +44,7 @@ class NanoMouseMotors {
     {
       leftServo.writeMicroseconds(1500 + power * direction);
       rightServo.writeMicroseconds(1500 + power * direction);
-      delay(degrees * 6.5);
+      delay(degrees * 6.0);
       stop();
     }
 
@@ -59,7 +59,7 @@ class NanoMouseMotors {
 
     void forwardProportional(int error)
     {
-      const byte Kp = 2;
+      const byte Kp = 1.5;
       leftServo.writeMicroseconds(1000 + power - Kp*error);
       rightServo.writeMicroseconds(2000 - power - Kp*error);
     }
