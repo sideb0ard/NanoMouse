@@ -119,12 +119,72 @@ class NanoMouseMaze
       }
     }
 
+    byte findBestNeighbor()
+    {
+      byte valueBestNeighbor = 255;
+      byte desiredHeading  = 0;
+
+      for (byte k = 0; k < 4; k++)
+      {
+        int neighboringCellRow = mouseRow + neighboringCells[k][0];
+        int neighboringCellColumn = mouseColumn + neighboringCells[k][1];
+
+        byte neighboringWallRow = mouseRow + neighboringWalls[k][0];
+        byte neighboringWallColumn = mouseColumn + neighboringWalls[k][1];
+
+        bool wallExists = false;
+
+        if (k == NORTH || k == SOUTH)
+          wallExists = horizontalWalls[neighboringWallRow][neighboringWallColumn];
+        else // must be east or west wall
+          wallExists = verticalWalls[neighboringWallRow][neighboringWallColumn];
+
+        if (values[neighboringCellRow][neighboringCellColumn] < valueBestNeighbor && !wallExists)
+          // TODO: if (values[neighboringCellRow][neighboringCellColumn] == valueBestNeighbor)
+        {
+          valueBestNeighbor = values[neighboringCellRow][neighboringCellColumn];
+          desiredHeading = k;
+        }
+      }
+      return desiredHeading;
+    }
+
+    void addWalls(byte cardinalDirection)
+    {
+      switch (cardinalDirection)
+      {
+        case NORTH:
+          horizontalWalls[mouseRow][mouseColumn] = true;
+          break;
+        case EAST:
+          verticalWalls[mouseRow][mouseColumn + 1] = true;
+          break;
+        case SOUTH:
+          horizontalWalls[mouseRow + 1][mouseColumn] = true;
+          break;
+        case WEST:
+          verticalWalls[mouseRow][mouseColumn] = true;
+          break;
+      }
+    }
+
     void addVirtualWalls()
     {
-      horizontalWalls[1][2] = true;
-      horizontalWalls[2][4] = true;
+      verticalWalls[0][1] = true;
+      verticalWalls[1][1] = true;
+      verticalWalls[3][1] = true;
+
+      verticalWalls[1][2] = true;
+      verticalWalls[2][2] = true;
+      verticalWalls[2][3] = true;
       verticalWalls[2][4] = true;
-      verticalWalls[1][3] = true;
+      verticalWalls[2][5] = true;
+
+      horizontalWalls[1][2] = true;
+      horizontalWalls[1][3] = true;
+      horizontalWalls[1][4] = true;
+      horizontalWalls[2][3] = true;
+      horizontalWalls[3][4] = true;
     }
 
 

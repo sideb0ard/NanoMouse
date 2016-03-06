@@ -1,3 +1,5 @@
+// #define DEBUG
+
 #include <Servo.h>
 #include "NanoMouseMotors.h"
 #include "NanoMouseSensors.h"
@@ -9,6 +11,7 @@ NanoMouseMotors motors;
 NanoMouseSensors<4, A7, 3, A6, 2, A5> sensors;
 
 const byte ledPin = 13;
+
 const byte buttonPin = 9;
 
 int targetFront;
@@ -17,7 +20,7 @@ int thresholdFront;
 int targetSide;
 int thresholdSide;
 
-NanoMouseMaze<4,6> maze;
+NanoMouseMaze<4, 6> maze;
 
 void setup()
 {
@@ -41,17 +44,64 @@ void setup()
 
   delay(200);
 
-//  calibrate();
+  calibrate();
 
-  maze.addVirtualWalls();
+  do
+  {
+    scanWalls();
+    maze.solve();
+
+    #ifdef DEBUG
+    maze.print();
+    while (digitalRead(buttonPin)) {}
+    delay(200);
+    #endif
+
+    turnTowardBestNeighbor();
+    forwardWhiskers();
+  }
+  while (maze.values[maze.mouseRow][maze.mouseColumn] != 0);
+
+  #ifdef DEBUG
+  scanWalls();
   maze.solve();
   maze.print();
+  #endif
+  
 
 }
 
 void loop()
 {
   //navigateLabryrinth(state());
+}
+
+void scanWalls()
+{
+  if (sensors.front > thresholdFront)
+    maze.addWalls(maze.mouseHeading);
+  if (sensors.right > thresholdSide)
+    maze.addWalls((maze.mouseHeading + 1) % 4);
+  if (sensors.left > thresholdSide)
+    maze.addWalls((maze.mouseHeading + 3) % 4);
+}
+
+void turnTowardBestNeighbor()
+{
+  byte desiredHeading = maze.findBestNeighbor();
+  int difference = maze.mouseHeading - desiredHeading;
+
+  if (difference == 1 || difference == -3)
+    motors.turn(LEFT, 90);
+  else if (difference == 3 || difference == -1)
+    motors.turn(RIGHT, 90);
+  else if (abs(difference) == 2)
+    motors.turn(RIGHT, 180);
+  // else do nothing
+
+  sensors.initialize();
+  maze.mouseHeading = desiredHeading;
+
 }
 
 byte state()
@@ -81,7 +131,7 @@ void calibrate()
   motors.turn(RIGHT, 90);
   sensors.initialize();
   targetFront = sensors.front;
-  thresholdSide = (targetSide + 2*sensors.left) / 3;
+  thresholdSide = (targetSide + 2 * sensors.left) / 3;
 
   motors.turn(LEFT, 90);
   sensors.initialize();
@@ -91,7 +141,7 @@ void calibrate()
 void forwardWhiskers()
 {
   unsigned long startingTime = millis();
-  
+
   while (sensors.front < targetFront && millis() - startingTime < 1505)
   {
     sensors.sense();
@@ -107,6 +157,9 @@ void forwardWhiskers()
   }
 
   motors.stop();
+
+  maze.mouseRow += neighboringCells[maze.mouseHeading][0];
+  maze.mouseColumn += neighboringCells[maze.mouseHeading][1];
 
 }
 void avoid(byte event)
